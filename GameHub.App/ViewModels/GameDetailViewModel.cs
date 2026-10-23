@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using GameHub.Core;
 using GameHub.Core.Models;
 using GameHub.Core.Repositories;
+using GameHub.Core.Settings;
 using Microsoft.Win32;
 
 namespace GameHub.App.ViewModels;
@@ -51,22 +52,29 @@ public partial class GameDetailViewModel : ObservableObject
     [ObservableProperty]
     private string? _workingDirectory;
 
+    /// <summary>Only the user-chosen cover; the auto-extracted icon is never stored here.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PreviewImagePath))]
     private string? _coverImagePath;
+
+    public string? PreviewImagePath => CoverImagePath ?? _game.IconCachePath;
+
+    public ISettingsService SettingsService { get; }
 
     public ObservableCollection<GroupMembershipRowViewModel> GroupMemberships { get; } = new();
 
-    public GameDetailViewModel(Game game, IGameRepository repository, List<Group> allGroups)
+    public GameDetailViewModel(Game game, IGameRepository repository, List<Group> allGroups, ISettingsService settingsService)
     {
         _game = game;
         _repository = repository;
+        SettingsService = settingsService;
 
         _name = game.Name;
         _executablePath = game.ExecutablePath;
         _notes = game.Notes;
         _arguments = game.Arguments;
         _workingDirectory = game.WorkingDirectory;
-        _coverImagePath = game.CoverImagePath ?? game.IconCachePath;
+        _coverImagePath = game.CoverImagePath;
 
         var currentGroupIds = game.GroupMaps.Select(m => m.GroupId).ToHashSet();
         foreach (var group in allGroups)

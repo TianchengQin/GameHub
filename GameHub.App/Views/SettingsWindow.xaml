@@ -25,6 +25,18 @@
 
                 <Separator Margin="0,0,0,16"/>
 
+                <TextBlock Text="启动行为" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,8"/>
+                <CheckBox Content="启动游戏后自动最小化到系统托盘" IsChecked="{Binding MinimizeToTrayOnLaunch}" Margin="0,0,0,16"/>
+
+                <Separator Margin="0,0,0,16"/>
+
+                <TextBlock Text="在线封面 (SteamGridDB)" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,4"/>
+                <TextBlock Text="在 steamgriddb.com 注册后，到个人偏好设置里生成 API Key 并填在这里，即可在游戏详情页在线搜索高清封面。"
+                           Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <ui:TextBox PlaceholderText="API Key" Text="{Binding SteamGridDbApiKey, UpdateSourceTrigger=LostFocus}" Margin="0,0,0,16"/>
+
+                <Separator Margin="0,0,0,16"/>
+
                 <TextBlock Text="文件夹扫描黑名单规则" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,4"/>
                 <TextBlock Text="扫描文件夹时，文件名匹配以下任一规则（支持 * 通配符）的 exe 不会出现在候选列表中。"
                            Opacity="0.7" TextWrapping="Wrap" Margin="0,0,0,8"/>

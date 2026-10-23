@@ -9,7 +9,7 @@ namespace GameHub.App.ViewModels;
 public partial class GroupRowViewModel : ObservableObject
 {
     public Guid Id { get; }
-    public int SortOrder { get; }
+    public int SortOrder { get; set; }
 
     [ObservableProperty]
     private string _name;
@@ -44,6 +44,23 @@ public partial class GroupManagerViewModel : ObservableObject
         Groups.Clear();
         foreach (var group in await _repository.GetAllGroupsAsync())
             Groups.Add(new GroupRowViewModel(group));
+    }
+
+    /// <summary>Moves <paramref name="dragged"/> to the position currently held by <paramref name="target"/> and saves the new order.</summary>
+    public async Task MoveGroupAsync(GroupRowViewModel dragged, GroupRowViewModel target)
+    {
+        var from = Groups.IndexOf(dragged);
+        var to = Groups.IndexOf(target);
+        if (from < 0 || to < 0 || from == to) return;
+
+        Groups.Move(from, to);
+        SelectedGroup = dragged;
+
+        for (var i = 0; i < Groups.Count; i++)
+            Groups[i].SortOrder = i;
+
+        foreach (var row in Groups)
+            await _repository.UpdateGroupAsync(new Group { Id = row.Id, Name = row.Name, SortOrder = row.SortOrder });
     }
 
     [RelayCommand]

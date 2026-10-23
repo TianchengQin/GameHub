@@ -13,6 +13,7 @@
             <conv:RelativeTimeConverter x:Key="RelativeTimeConverter"/>
             <conv:PathToImageSourceConverter x:Key="PathToImageSourceConverter"/>
             <conv:CoverPlaceholderVisibilityConverter x:Key="CoverPlaceholderVisibilityConverter"/>
+            <conv:FavoriteGlyphConverter x:Key="FavoriteGlyphConverter"/>
             <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         </ResourceDictionary>
     </Application.Resources>

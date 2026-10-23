@@ -30,14 +30,34 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _newPattern = string.Empty;
 
+    [ObservableProperty]
+    private bool _minimizeToTrayOnLaunch;
+
+    [ObservableProperty]
+    private string _steamGridDbApiKey;
+
     public SettingsViewModel(IGameRepository repository, ISettingsService settingsService)
     {
         _repository = repository;
         _settingsService = settingsService;
 
         _selectedTheme = settingsService.Current.Theme;
+        _minimizeToTrayOnLaunch = settingsService.Current.MinimizeToTrayOnLaunch;
+        _steamGridDbApiKey = settingsService.Current.SteamGridDbApiKey ?? string.Empty;
         foreach (var pattern in settingsService.Current.BlacklistPatterns)
             BlacklistPatterns.Add(pattern);
+    }
+
+    partial void OnMinimizeToTrayOnLaunchChanged(bool value)
+    {
+        _settingsService.Current.MinimizeToTrayOnLaunch = value;
+        _settingsService.Save();
+    }
+
+    partial void OnSteamGridDbApiKeyChanged(string value)
+    {
+        _settingsService.Current.SteamGridDbApiKey = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        _settingsService.Save();
     }
 
     partial void OnSelectedThemeChanged(AppTheme value)

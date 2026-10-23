@@ -26,12 +26,16 @@
 
                     <Border Grid.Column="0" Width="120" Height="160" CornerRadius="8"
                             Background="{DynamicResource ControlFillColorDefaultBrush}">
-                        <Image Source="{Binding CoverImagePath, Converter={StaticResource PathToImageSourceConverter}}"
-                               Stretch="UniformToFill"/>
+                        <Image Source="{Binding PreviewImagePath, Converter={StaticResource PathToImageSourceConverter}}"
+                               Stretch="Uniform" Margin="12"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
                     </Border>
 
                     <StackPanel Grid.Column="1" Margin="16,0,0,0" VerticalAlignment="Top">
-                        <ui:Button Content="更换封面图" Command="{Binding ChooseCoverImageCommand}" Margin="0,0,0,8" HorizontalAlignment="Left"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <ui:Button Content="更换封面图" Command="{Binding ChooseCoverImageCommand}" Margin="0,0,8,0"/>
+                            <ui:Button Content="在线搜索封面" Appearance="Secondary" Click="OnSearchCoverOnlineClick"/>
+                        </StackPanel>
                         <TextBlock Text="统计信息" FontWeight="SemiBold" Margin="0,8,0,4"/>
                         <TextBlock Text="{Binding DateAdded, StringFormat='添加时间：{0:yyyy-MM-dd HH:mm}'}" Opacity="0.75"/>
                         <TextBlock Text="{Binding LastPlayedAt, StringFormat='上次启动：{0:yyyy-MM-dd HH:mm}', TargetNullValue='上次启动：从未启动'}" Opacity="0.75"/>

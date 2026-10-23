@@ -24,8 +24,15 @@ public partial class GameCardViewModel : ObservableObject
     public string? CoverImagePath => _game.CoverImagePath ?? _game.IconCachePath;
     public List<Guid> GroupIds { get; }
 
+    /// <summary>True when the user supplied real cover art (shown full-bleed); otherwise only the exe icon is available.</summary>
+    public bool HasCustomCover => !string.IsNullOrWhiteSpace(_game.CoverImagePath) && File.Exists(_game.CoverImagePath);
+    public bool IsIconOnly => !HasCustomCover;
+    public string? IconImagePath => _game.IconCachePath;
+
     public event EventHandler? RemoveRequested;
     public event EventHandler? DetailsRequested;
+    public event EventHandler? Launched;
+    public event EventHandler<string>? LaunchFailed;
 
     [ObservableProperty]
     private DateTime? _lastPlayedAt;
@@ -69,6 +76,7 @@ public partial class GameCardViewModel : ObservableObject
         if (!result.Success)
         {
             IsPathMissing = !File.Exists(_game.ExecutablePath);
+            LaunchFailed?.Invoke(this, $"无法启动「{Name}」：{result.ErrorMessage ?? "未知错误"}");
             return;
         }
 
@@ -79,6 +87,7 @@ public partial class GameCardViewModel : ObservableObject
 
         _game.LastPlayedAt = result.LaunchedAt;
         _game.PlayCount = PlayCount;
+        Launched?.Invoke(this, EventArgs.Empty);
         await _repository.UpdateGameAsync(_game);
     }
 
@@ -103,6 +112,9 @@ public partial class GameCardViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(Name));
         OnPropertyChanged(nameof(CoverImagePath));
+        OnPropertyChanged(nameof(HasCustomCover));
+        OnPropertyChanged(nameof(IsIconOnly));
+        OnPropertyChanged(nameof(IconImagePath));
         OnPropertyChanged(nameof(ExecutablePath));
         IsPathMissing = !File.Exists(_game.ExecutablePath);
     }

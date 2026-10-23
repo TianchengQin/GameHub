@@ -26,6 +26,70 @@ public class GameScanner
         return result;
     }
 
+    private static readonly string[] ShortcutNameNoise =
+    {
+        "*uninstall*", "*readme*", "*help*", "*website*", "*manual*", "*changelog*", "*release notes*",
+        "*卸载*", "*帮助*", "*说明*", "*官网*", "*更新日志*"
+    };
+
+    /// <summary>Lists exe targets of Start Menu shortcuts (all-users + current user) as import candidates.</summary>
+    public List<ScanCandidate> ScanStartMenu(ScanOptions? options = null)
+    {
+        var roots = new[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonStartMenu), "Programs"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu), "Programs")
+        };
+
+        var shortcuts = roots.SelectMany(EnumerateShortcutFiles);
+        return ScanShortcuts(shortcuts, ShortcutResolver.ResolveTarget, options);
+    }
+
+    public List<ScanCandidate> ScanShortcuts(IEnumerable<string> lnkPaths, Func<string, string?> resolveTarget, ScanOptions? options = null)
+    {
+        options ??= new ScanOptions();
+        var windowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+        var seenTargets = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var results = new List<ScanCandidate>();
+
+        foreach (var lnkPath in lnkPaths)
+        {
+            var linkName = Path.GetFileNameWithoutExtension(lnkPath);
+            if (ShortcutNameNoise.Any(p => IsWildcardMatch(linkName, p))) continue;
+
+            var target = resolveTarget(lnkPath);
+            if (string.IsNullOrWhiteSpace(target)) continue;
+            if (!target.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) continue;
+            if (target.StartsWith(windowsDir, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!File.Exists(target)) continue;
+            if (IsBlacklisted(Path.GetFileName(target), options.BlacklistPatterns)) continue;
+            if (!seenTargets.Add(target)) continue;
+
+            results.Add(new ScanCandidate
+            {
+                FolderPath = Path.GetDirectoryName(target) ?? string.Empty,
+                SuggestedName = linkName,
+                ExeCandidates = new List<ExeCandidate> { new() { FullPath = target, Score = 1.0 } }
+            });
+        }
+
+        return results.OrderBy(c => c.SuggestedName, StringComparer.CurrentCultureIgnoreCase).ToList();
+    }
+
+    private static IEnumerable<string> EnumerateShortcutFiles(string root)
+    {
+        if (!Directory.Exists(root)) return Enumerable.Empty<string>();
+
+        try
+        {
+            return Directory.EnumerateFiles(root, "*.lnk", SearchOption.AllDirectories).ToList();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return Enumerable.Empty<string>();
+        }
+    }
+
     public ScanCandidate BuildCandidate(string folderPath, ScanOptions options)
     {
         var folderName = new DirectoryInfo(folderPath).Name;

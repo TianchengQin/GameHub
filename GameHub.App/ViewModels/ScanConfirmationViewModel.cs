@@ -19,13 +19,13 @@ public partial class ScanRowViewModel : ObservableObject
     [ObservableProperty]
     private string? _selectedExePath;
 
-    public ScanRowViewModel(ScanCandidate candidate)
+    public ScanRowViewModel(ScanCandidate candidate, bool isDefaultSelected)
     {
         Candidate = candidate;
         ExePaths = candidate.ExeCandidates.Select(c => c.FullPath).ToList();
         _name = candidate.SuggestedName;
         _selectedExePath = candidate.BestExePath;
-        _isSelected = candidate.IncludeByDefault;
+        _isSelected = isDefaultSelected && candidate.IncludeByDefault;
     }
 }
 
@@ -33,9 +33,10 @@ public class ScanConfirmationViewModel
 {
     public ObservableCollection<ScanRowViewModel> Rows { get; }
 
-    public ScanConfirmationViewModel(IEnumerable<ScanCandidate> candidates)
+    /// <param name="isDefaultSelected">Folder scans pre-tick every row; the start menu lists many non-games, so it starts unticked.</param>
+    public ScanConfirmationViewModel(IEnumerable<ScanCandidate> candidates, bool isDefaultSelected = true)
     {
-        Rows = new ObservableCollection<ScanRowViewModel>(candidates.Select(c => new ScanRowViewModel(c)));
+        Rows = new ObservableCollection<ScanRowViewModel>(candidates.Select(c => new ScanRowViewModel(c, isDefaultSelected)));
     }
 
     public List<Game> BuildSelectedGames()

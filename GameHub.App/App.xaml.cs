@@ -21,6 +21,7 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        ShutdownMode = ShutdownMode.OnMainWindowClose;
         AppPaths.EnsureDirectories();
 
         _host = Host.CreateDefaultBuilder()

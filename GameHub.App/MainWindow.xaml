@@ -36,6 +36,13 @@
                     <ListBox ItemsSource="{Binding NavItems}"
                              SelectedItem="{Binding SelectedNavItem}"
                              BorderThickness="0" Background="Transparent">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                                <Setter Property="AllowDrop" Value="True"/>
+                                <EventSetter Event="DragOver" Handler="OnNavItemDragOver"/>
+                                <EventSetter Event="Drop" Handler="OnNavItemDrop"/>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal" Margin="4">
@@ -48,8 +55,13 @@
 
                     <Separator Margin="0,12"/>
 
+                    <TextBlock Text="把游戏卡片拖到上方分组即可加入该分组" Opacity="0.5" FontSize="11"
+                               TextWrapping="Wrap" Margin="4,0,0,12"/>
+
                     <ui:Button Content="管理分组" Appearance="Secondary"
                                Command="{Binding ManageGroupsCommand}" HorizontalAlignment="Stretch" Margin="0,0,0,8"/>
+                    <ui:Button Content="收藏悬浮窗" Appearance="Secondary"
+                               Command="{Binding ToggleFloatingWindowCommand}" HorizontalAlignment="Stretch" Margin="0,0,0,8"/>
                     <ui:Button Content="设置" Appearance="Secondary"
                                Command="{Binding OpenSettingsCommand}" HorizontalAlignment="Stretch"/>
                 </StackPanel>
@@ -67,15 +79,18 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <ui:TextBox Grid.Column="0" PlaceholderText="搜索游戏…"
                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                 MaxWidth="320" HorizontalAlignment="Left"/>
 
-                    <ui:Button Grid.Column="1" Content="扫描文件夹" Appearance="Secondary"
+                    <ui:Button Grid.Column="1" Content="从开始菜单导入" Appearance="Secondary"
+                               Command="{Binding ScanStartMenuCommand}" Margin="0,0,8,0"/>
+                    <ui:Button Grid.Column="2" Content="扫描文件夹" Appearance="Secondary"
                                Command="{Binding ScanFolderCommand}" Margin="0,0,8,0"/>
-                    <ui:Button Grid.Column="2" Content="添加游戏" Appearance="Primary"
+                    <ui:Button Grid.Column="3" Content="添加游戏" Appearance="Primary"
                                Command="{Binding AddGameCommand}"/>
                 </Grid>
 
@@ -96,7 +111,9 @@
                                 <DataTemplate>
                                     <Border Width="200" Height="280" Margin="8" CornerRadius="8"
                                             Background="{DynamicResource ControlFillColorDefaultBrush}"
-                                            ClipToBounds="True">
+                                            ClipToBounds="True"
+                                            PreviewMouseLeftButtonDown="OnGameCardPreviewMouseDown"
+                                            PreviewMouseMove="OnGameCardPreviewMouseMove">
                                         <Border.ContextMenu>
                                             <ContextMenu>
                                                 <MenuItem Header="查看详情" Command="{Binding OpenDetailsCommand}"/>
@@ -112,17 +129,28 @@
                                                 <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
 
-                                            <Image Grid.Row="0"
+                                            <Image Grid.Row="0" Stretch="UniformToFill"
+                                                   RenderOptions.BitmapScalingMode="HighQuality"
                                                    Source="{Binding CoverImagePath, Converter={StaticResource PathToImageSourceConverter}}"
-                                                   Stretch="UniformToFill"/>
+                                                   Visibility="{Binding HasCustomCover, Converter={StaticResource BoolToVis}}"/>
+
+                                            <Image Grid.Row="0" Stretch="Uniform" Width="112" Height="112"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,30"
+                                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                                   Source="{Binding IconImagePath, Converter={StaticResource PathToImageSourceConverter}}"
+                                                   Visibility="{Binding IsIconOnly, Converter={StaticResource BoolToVis}}"/>
 
                                             <TextBlock Grid.Row="0" Text="🎮" FontSize="48" Opacity="0.3"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                                        Visibility="{Binding CoverImagePath, Converter={StaticResource CoverPlaceholderVisibilityConverter}}"/>
 
-                                            <TextBlock Grid.Row="0" Text="★" FontSize="18" Foreground="Gold"
-                                                       HorizontalAlignment="Right" VerticalAlignment="Top" Margin="6"
-                                                       Visibility="{Binding IsFavorite, Converter={StaticResource BoolToVis}}"/>
+                                            <Button Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4"
+                                                    Panel.ZIndex="5"
+                                                    Padding="6,2" FontSize="20" Foreground="Gold" Cursor="Hand"
+                                                    Background="#66000000" BorderThickness="0"
+                                                    ToolTip="收藏 / 取消收藏"
+                                                    Command="{Binding ToggleFavoriteCommand}"
+                                                    Content="{Binding IsFavorite, Converter={StaticResource FavoriteGlyphConverter}}"/>
 
                                             <Border Grid.Row="0" VerticalAlignment="Top" HorizontalAlignment="Stretch"
                                                     Background="#CCB00020" Padding="6"
@@ -150,5 +178,12 @@
                 </Grid>
             </Grid>
         </Grid>
+
+        <Border Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="24"
+                MaxWidth="380" Padding="16,12" CornerRadius="8"
+                Background="#E6202020" BorderBrush="#40FFFFFF" BorderThickness="1"
+                Visibility="{Binding IsToastVisible, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" TextWrapping="Wrap"/>
+        </Border>
     </Grid>
 </ui:FluentWindow>

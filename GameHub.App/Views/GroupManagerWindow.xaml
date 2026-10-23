@@ -32,7 +32,16 @@
                  SelectedItem="{Binding SelectedGroup}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
-                    <ui:TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                    <Grid AllowDrop="True" Background="Transparent" Drop="OnRowDrop" DragOver="OnRowDragOver">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="⠿" FontSize="18" Opacity="0.6" Cursor="SizeAll"
+                                   VerticalAlignment="Center" Margin="4,0,8,0" ToolTip="拖动调整顺序"
+                                   PreviewMouseMove="OnGripMouseMove"/>
+                        <ui:TextBox Grid.Column="1" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="2"/>
+                    </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>

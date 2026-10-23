@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GameHub.App.Views;
@@ -27,6 +28,18 @@ public partial class MainWindowViewModel : ObservableObject
     public ObservableCollection<GameCardViewModel> Games { get; } = new();
     public ObservableCollection<NavItem> NavItems { get; } = new();
     public ICollectionView GamesView { get; }
+    public ICollectionView FavoritesView { get; }
+
+    public event EventHandler? MinimizeToTrayRequested;
+
+    private FloatingFavoritesWindow? _floatingWindow;
+    private DispatcherTimer? _toastTimer;
+
+    [ObservableProperty]
+    private string? _toastMessage;
+
+    [ObservableProperty]
+    private bool _isToastVisible;
 
     [ObservableProperty]
     private NavItem? _selectedNavItem;
@@ -50,8 +63,34 @@ public partial class MainWindowViewModel : ObservableObject
 
         GamesView = CollectionViewSource.GetDefaultView(Games);
         GamesView.Filter = FilterGame;
+        GamesView.SortDescriptions.Add(new SortDescription(nameof(GameCardViewModel.IsFavorite), ListSortDirection.Descending));
+        GamesView.SortDescriptions.Add(new SortDescription(nameof(GameCardViewModel.LastPlayedAt), ListSortDirection.Descending));
+        EnableLiveShaping(GamesView, filter: true, sort: true);
+
+        var favorites = new ListCollectionView(Games) { Filter = o => o is GameCardViewModel g && g.IsFavorite };
+        favorites.SortDescriptions.Add(new SortDescription(nameof(GameCardViewModel.LastPlayedAt), ListSortDirection.Descending));
+        EnableLiveShaping(favorites, filter: true, sort: false);
+        FavoritesView = favorites;
 
         RebuildFixedNavItems();
+    }
+
+    private static void EnableLiveShaping(ICollectionView view, bool filter, bool sort)
+    {
+        if (view is not ICollectionViewLiveShaping live) return;
+
+        if (filter && live.CanChangeLiveFiltering)
+        {
+            live.LiveFilteringProperties.Add(nameof(GameCardViewModel.IsFavorite));
+            live.IsLiveFiltering = true;
+        }
+
+        if (sort && live.CanChangeLiveSorting)
+        {
+            live.LiveSortingProperties.Add(nameof(GameCardViewModel.IsFavorite));
+            live.LiveSortingProperties.Add(nameof(GameCardViewModel.LastPlayedAt));
+            live.IsLiveSorting = true;
+        }
     }
 
     [RelayCommand]
@@ -69,11 +108,54 @@ public partial class MainWindowViewModel : ObservableObject
 
             var groups = await _repository.GetAllGroupsAsync();
             RebuildFixedNavItems(groups);
+
+            _ = UpgradeLowResIconsOnceAsync();
         }
         finally
         {
             IsLoading = false;
         }
+    }
+
+    private bool _iconUpgradeStarted;
+
+    /// <summary>Re-extracts small cached icons from older versions at full resolution, once per app run.</summary>
+    private async Task UpgradeLowResIconsOnceAsync()
+    {
+        if (_iconUpgradeStarted) return;
+        _iconUpgradeStarted = true;
+
+        // Icons written by an earlier build came out upside down; regenerate everything once, then drop a marker.
+        var marker = Path.Combine(AppPaths.IconsFolder, ".format-v2");
+        var force = !File.Exists(marker);
+
+        var cards = Games.ToList();
+        var upgraded = await Task.Run(() =>
+        {
+            var changed = new List<GameCardViewModel>();
+            foreach (var card in cards)
+            {
+                var iconPath = Path.Combine(AppPaths.IconsFolder, card.Id + ".png");
+                if (!IconExtractor.TryUpgradeIcon(card.ExecutablePath, iconPath, force)) continue;
+
+                card.GameModel.IconCachePath = iconPath;
+                changed.Add(card);
+            }
+
+            if (force)
+                File.WriteAllText(marker, "2");
+
+            return changed;
+        });
+
+        foreach (var card in upgraded)
+        {
+            await _repository.UpdateGameAsync(card.GameModel);
+            card.RefreshDisplayFields();
+        }
+
+        if (upgraded.Count > 0)
+            ShowToast($"已为 {upgraded.Count} 个游戏刷新了高清图标");
     }
 
     private void RebuildFixedNavItems(List<Group>? groups = null)
@@ -197,6 +279,8 @@ public partial class MainWindowViewModel : ObservableObject
         var vm = new GameCardViewModel(game, _launcher, _repository);
         vm.RemoveRequested += OnGameRemoveRequested;
         vm.DetailsRequested += OnGameDetailsRequested;
+        vm.Launched += OnGameLaunched;
+        vm.LaunchFailed += OnGameLaunchFailed;
         return vm;
     }
 
@@ -206,8 +290,119 @@ public partial class MainWindowViewModel : ObservableObject
 
         vm.RemoveRequested -= OnGameRemoveRequested;
         vm.DetailsRequested -= OnGameDetailsRequested;
+        vm.Launched -= OnGameLaunched;
+        vm.LaunchFailed -= OnGameLaunchFailed;
         Games.Remove(vm);
         HasNoGames = Games.Count == 0;
+    }
+
+    private void OnGameLaunched(object? sender, EventArgs e)
+    {
+        if (_settingsService.Current.MinimizeToTrayOnLaunch)
+            MinimizeToTrayRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void OnGameLaunchFailed(object? sender, string message) => ShowToast(message);
+
+    public void ShowToast(string message)
+    {
+        ToastMessage = message;
+        IsToastVisible = true;
+
+        _toastTimer?.Stop();
+        _toastTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+        _toastTimer.Tick += (_, _) =>
+        {
+            IsToastVisible = false;
+            _toastTimer?.Stop();
+        };
+        _toastTimer.Start();
+    }
+
+    public async Task AssignGameToGroupAsync(Guid gameId, Guid groupId)
+    {
+        await _repository.AssignGameToGroupAsync(gameId, groupId);
+
+        var groupName = NavItems.FirstOrDefault(n => n.GroupId == groupId)?.Label ?? "分组";
+        var gameName = Games.FirstOrDefault(g => g.Id == gameId)?.Name ?? "游戏";
+        await LoadAsync();
+        ShowToast($"已把「{gameName}」加入「{groupName}」");
+    }
+
+    [RelayCommand]
+    private async Task ScanStartMenuAsync()
+    {
+        var scanOptions = new ScanOptions { BlacklistPatterns = _settingsService.Current.BlacklistPatterns };
+        var candidates = await Task.Run(() => _scanner.ScanStartMenu(scanOptions));
+
+        var existing = Games.Select(g => g.ExecutablePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        candidates = candidates.Where(c => c.BestExePath is not null && !existing.Contains(c.BestExePath)).ToList();
+
+        if (candidates.Count == 0)
+        {
+            ShowToast("开始菜单中没有发现新的可导入程序。");
+            return;
+        }
+
+        var confirmVm = new ScanConfirmationViewModel(candidates, isDefaultSelected: false);
+        var window = new ScanConfirmationWindow(confirmVm) { Owner = Application.Current.MainWindow };
+        if (window.ShowDialog() != true) return;
+
+        var newGames = confirmVm.BuildSelectedGames();
+        if (newGames.Count == 0) return;
+
+        foreach (var game in newGames)
+            TryAssignIcon(game);
+
+        await _repository.AddGamesAsync(newGames);
+        await LoadAsync();
+        ShowToast($"已导入 {newGames.Count} 个程序");
+    }
+
+    [RelayCommand]
+    private void ToggleFloatingWindow()
+    {
+        if (_floatingWindow is not null)
+        {
+            _floatingWindow.Close();
+            return;
+        }
+
+        var window = new FloatingFavoritesWindow(this);
+        var left = _settingsService.Current.FloatingWindowLeft;
+        var top = _settingsService.Current.FloatingWindowTop;
+        if (left is not null && top is not null)
+        {
+            window.WindowStartupLocation = WindowStartupLocation.Manual;
+            window.Left = left.Value;
+            window.Top = top.Value;
+        }
+
+        window.Closed += (_, _) =>
+        {
+            _settingsService.Current.FloatingWindowLeft = window.Left;
+            _settingsService.Current.FloatingWindowTop = window.Top;
+            if (!_isShuttingDown)
+                _settingsService.Current.ShowFloatingFavoritesWindow = false;
+            _settingsService.Save();
+            _floatingWindow = null;
+        };
+
+        _floatingWindow = window;
+        _settingsService.Current.ShowFloatingFavoritesWindow = true;
+        _settingsService.Save();
+        window.Show();
+    }
+
+    private bool _isShuttingDown;
+
+    /// <summary>Called when the app exits so the floating window's open state is remembered for next launch.</summary>
+    public void PrepareForShutdown() => _isShuttingDown = true;
+
+    public void RestoreFloatingWindowIfNeeded()
+    {
+        if (_settingsService.Current.ShowFloatingFavoritesWindow && _floatingWindow is null)
+            ToggleFloatingWindow();
     }
 
     private async void OnGameDetailsRequested(object? sender, EventArgs e)
@@ -215,7 +410,7 @@ public partial class MainWindowViewModel : ObservableObject
         if (sender is not GameCardViewModel cardVm) return;
 
         var groups = await _repository.GetAllGroupsAsync();
-        var detailVm = new GameDetailViewModel(cardVm.GameModel, _repository, groups);
+        var detailVm = new GameDetailViewModel(cardVm.GameModel, _repository, groups, _settingsService);
         var window = new GameDetailWindow(detailVm) { Owner = Application.Current.MainWindow };
 
         if (window.ShowDialog() == true)
