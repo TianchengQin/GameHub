@@ -18,6 +18,20 @@
 
         <ScrollViewer Grid.Row="1" Margin="16,0,16,8" VerticalScrollBarVisibility="Auto">
             <StackPanel>
+                <TextBlock Text="更新" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,8"/>
+                <TextBlock Text="{Binding CurrentVersionText, StringFormat='当前版本：{0}'}" Margin="0,0,0,8"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <ui:Button Content="检查更新" Command="{Binding CheckForUpdatesCommand}" Margin="0,0,8,0"/>
+                    <ui:Button Content="下载并安装" Appearance="Primary" Command="{Binding InstallUpdateCommand}" Margin="0,0,8,0"/>
+                    <ui:Button Content="查看发布页" Appearance="Secondary" Command="{Binding OpenReleasePageCommand}"/>
+                </StackPanel>
+                <TextBlock Text="{Binding UpdateStatus}" Opacity="0.8" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <ProgressBar Value="{Binding UpdateProgress}" Maximum="100" Height="6" Margin="0,0,0,8"
+                             Visibility="{Binding IsUpdateBusy, Converter={StaticResource BoolToVis}}"/>
+                <CheckBox Content="启动时自动检查更新" IsChecked="{Binding AutoCheckUpdates}" Margin="0,0,0,16"/>
+
+                <Separator Margin="0,0,0,16"/>
+
                 <TextBlock Text="外观" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,8"/>
                 <TextBlock Text="主题" Margin="0,0,0,4"/>
                 <ComboBox ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme}"

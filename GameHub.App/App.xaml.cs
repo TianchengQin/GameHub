@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using GameHub.App.Theming;
+using GameHub.App.Updates;
 using GameHub.App.ViewModels;
 using GameHub.Core;
 using GameHub.Core.Launching;
@@ -34,6 +35,7 @@ public partial class App : Application
                 services.AddSingleton<GameScanner>();
                 services.AddSingleton<GameLauncher>();
                 services.AddSingleton<ISettingsService, SettingsService>();
+                services.AddSingleton<UpdateService>();
 
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddSingleton<MainWindow>();

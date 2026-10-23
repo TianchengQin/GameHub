@@ -16,6 +16,8 @@ public class AppSettings
 
     public bool MinimizeToTrayOnLaunch { get; set; } = true;
 
+    public bool AutoCheckUpdates { get; set; } = true;
+
     public bool ShowFloatingFavoritesWindow { get; set; }
     public double? FloatingWindowLeft { get; set; }
     public double? FloatingWindowTop { get; set; }

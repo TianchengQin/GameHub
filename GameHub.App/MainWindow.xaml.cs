@@ -24,13 +24,14 @@ public partial class MainWindow : FluentWindow
         _viewModel = viewModel;
         DataContext = viewModel;
 
-        _tray = new TrayIconService(this);
+        _tray = new TrayIconService(this, viewModel.ToggleFloatingWindowFromTray);
         viewModel.MinimizeToTrayRequested += (_, _) => _tray.MinimizeToTray();
 
         Loaded += async (_, _) =>
         {
             await viewModel.LoadCommand.ExecuteAsync(null);
             viewModel.RestoreFloatingWindowIfNeeded();
+            await viewModel.CheckForUpdatesInBackgroundAsync();
         };
 
         Closing += (_, _) => viewModel.PrepareForShutdown();

@@ -6,6 +6,7 @@ using System.Windows.Data;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GameHub.App.Updates;
 using GameHub.App.Views;
 using GameHub.Core;
 using GameHub.Core.Icons;
@@ -24,6 +25,7 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly GameLauncher _launcher;
     private readonly GameScanner _scanner;
     private readonly ISettingsService _settingsService;
+    private readonly UpdateService _updateService;
 
     public ObservableCollection<GameCardViewModel> Games { get; } = new();
     public ObservableCollection<NavItem> NavItems { get; } = new();
@@ -53,12 +55,13 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasNoGames;
 
-    public MainWindowViewModel(IGameRepository repository, GameLauncher launcher, GameScanner scanner, ISettingsService settingsService)
+    public MainWindowViewModel(IGameRepository repository, GameLauncher launcher, GameScanner scanner, ISettingsService settingsService, UpdateService updateService)
     {
         _repository = repository;
         _launcher = launcher;
         _scanner = scanner;
         _settingsService = settingsService;
+        _updateService = updateService;
         _launcher.SessionEnded += OnSessionEnded;
 
         GamesView = CollectionViewSource.GetDefaultView(Games);
@@ -262,7 +265,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void OpenSettings()
     {
-        var vm = new SettingsViewModel(_repository, _settingsService);
+        var vm = new SettingsViewModel(_repository, _settingsService, _updateService);
         var window = new SettingsWindow(vm) { Owner = Application.Current.MainWindow };
         window.ShowDialog();
     }
@@ -398,6 +401,25 @@ public partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Called when the app exits so the floating window's open state is remembered for next launch.</summary>
     public void PrepareForShutdown() => _isShuttingDown = true;
+
+    /// <summary>Quietly checks for a newer release at startup; failures (offline, rate-limited) are ignored.</summary>
+    public async Task CheckForUpdatesInBackgroundAsync()
+    {
+        if (!_settingsService.Current.AutoCheckUpdates) return;
+
+        try
+        {
+            var update = await _updateService.CheckAsync();
+            if (update is not null)
+                ShowToast($"发现新版本 {update.Version.ToString(3)}，到「设置 → 更新」即可一键安装。");
+        }
+        catch
+        {
+            // Offline or GitHub unreachable: not worth bothering the user.
+        }
+    }
+
+    public void ToggleFloatingWindowFromTray() => ToggleFloatingWindowCommand.Execute(null);
 
     public void RestoreFloatingWindowIfNeeded()
     {

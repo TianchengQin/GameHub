@@ -93,20 +93,26 @@ dotnet run --project GameHub.App/GameHub.App.csproj
 
 首次启动会自动在 `%LocalAppData%\GameHub\` 创建数据库并执行 EF Core 迁移。
 
-## 打包安装程序
+## 打包与发布更新
 
-需要 [Inno Setup 6](https://jrsoftware.org/isinfo.php)。
+需要 [Inno Setup 6](https://jrsoftware.org/isinfo.php)（`winget install JRSoftware.InnoSetup`）。版本号在 `GameHub.App/GameHub.App.csproj` 的 `<Version>` 里。
 
-```bash
-# 1. 发布为 self-contained 单文件 exe（装机器上不需要预装 .NET 运行时）
-dotnet publish GameHub.App/GameHub.App.csproj -c Release -r win-x64 --self-contained true ^
-    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish/GameHub.App
-
-# 2. 编译安装包（输出到 dist/GameHubSetup.exe）
-"C:\path\to\Inno Setup 6\ISCC.exe" installer/setup.iss
+```powershell
+# 测试 -> self-contained 单文件发布 -> 编译安装包 -> 生成 SHA-256
+powershell -File scriptsuild-release.ps1
 ```
 
-安装包已验证过完整的"静默安装 → 启动 → 卸载"流程，卸载时会询问是否同时删除 `%LocalAppData%\GameHub` 下的数据库和封面/图标缓存。
+产物是 `dist\GameHubSetup-<版本>.exe`（同时也是"更新程序"：直接运行即可原地升级，设置和游戏库数据保留）。
+
+### 应用内更新
+设置页 →「更新」可以检查并一键安装新版本；启动时也会静默检查（可关闭）。它读取本仓库 GitHub Releases 的最新发布，要求：
+1. Release 的 tag 形如 `v1.3.0`
+2. 附件里有 `GameHubSetup-*.exe`
+3. 完整性校验值：GitHub 会自动给附件生成 digest；若没有，请在 Release 说明里写一行 `SHA-256: <64位十六进制>`（`build-release.ps1` 末尾会打印）
+
+下载后会校验 SHA-256，不匹配则丢弃，然后以静默模式运行安装包并自动重启 GameHub。
+
+安装包已验证过完整的"静默安装 → 启动 → 卸载"流程；卸载时会询问是否同时删除 `%LocalAppData%\GameHub` 下的数据（静默卸载默认保留数据）。
 
 ## 已知局限
 

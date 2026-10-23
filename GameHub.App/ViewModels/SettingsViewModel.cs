@@ -6,10 +6,12 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GameHub.App.Theming;
+using GameHub.App.Updates;
 using GameHub.Core;
 using GameHub.Core.Backup;
 using GameHub.Core.Repositories;
 using GameHub.Core.Settings;
+using GameHub.Core.Updates;
 using Microsoft.Win32;
 
 namespace GameHub.App.ViewModels;
@@ -36,16 +38,114 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _steamGridDbApiKey;
 
-    public SettingsViewModel(IGameRepository repository, ISettingsService settingsService)
+    [ObservableProperty]
+    private bool _autoCheckUpdates;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CheckForUpdatesCommand))]
+    [NotifyCanExecuteChangedFor(nameof(InstallUpdateCommand))]
+    private bool _isUpdateBusy;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(InstallUpdateCommand))]
+    private UpdateInfo? _availableUpdate;
+
+    [ObservableProperty]
+    private string _updateStatus = string.Empty;
+
+    [ObservableProperty]
+    private double _updateProgress;
+
+    public string CurrentVersionText => _updateService.CurrentVersionText;
+
+    private readonly UpdateService _updateService;
+
+    public SettingsViewModel(IGameRepository repository, ISettingsService settingsService, UpdateService updateService)
     {
         _repository = repository;
         _settingsService = settingsService;
+        _updateService = updateService;
 
         _selectedTheme = settingsService.Current.Theme;
         _minimizeToTrayOnLaunch = settingsService.Current.MinimizeToTrayOnLaunch;
+        _autoCheckUpdates = settingsService.Current.AutoCheckUpdates;
         _steamGridDbApiKey = settingsService.Current.SteamGridDbApiKey ?? string.Empty;
         foreach (var pattern in settingsService.Current.BlacklistPatterns)
             BlacklistPatterns.Add(pattern);
+
+        _availableUpdate = updateService.Available;
+        if (_availableUpdate is not null)
+            _updateStatus = $"发现新版本 {_availableUpdate.Version.ToString(3)}";
+    }
+
+    partial void OnAutoCheckUpdatesChanged(bool value)
+    {
+        _settingsService.Current.AutoCheckUpdates = value;
+        _settingsService.Save();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanCheckForUpdates))]
+    private async Task CheckForUpdatesAsync()
+    {
+        IsUpdateBusy = true;
+        UpdateStatus = "正在检查更新…";
+        try
+        {
+            AvailableUpdate = await _updateService.CheckAsync();
+            UpdateStatus = AvailableUpdate is null
+                ? "已是最新版本。"
+                : $"发现新版本 {AvailableUpdate.Version.ToString(3)}，可以下载并安装。";
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = $"检查更新失败：{ex.Message}";
+        }
+        finally
+        {
+            IsUpdateBusy = false;
+        }
+    }
+
+    private bool CanCheckForUpdates() => !IsUpdateBusy;
+
+    [RelayCommand(CanExecute = nameof(CanInstallUpdate))]
+    private async Task InstallUpdateAsync()
+    {
+        if (AvailableUpdate is null) return;
+
+        IsUpdateBusy = true;
+        UpdateProgress = 0;
+        UpdateStatus = "正在下载更新…";
+        try
+        {
+            var progress = new Progress<double>(p => UpdateProgress = p * 100);
+            await _updateService.LaunchInstallerAsync(AvailableUpdate, progress);
+            UpdateStatus = "安装程序已启动，GameHub 即将退出并自动重启。";
+            Application.Current.Shutdown();
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = $"更新失败：{ex.Message}";
+            IsUpdateBusy = false;
+        }
+    }
+
+    private bool CanInstallUpdate() => AvailableUpdate is not null && !IsUpdateBusy;
+
+    [RelayCommand]
+    private void OpenReleasePage()
+    {
+        var url = AvailableUpdate?.PageUrl;
+        if (string.IsNullOrEmpty(url)) url = "https://github.com/TianchengQin/GameHub/releases";
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch
+        {
+            // Best-effort; no browser available.
+        }
     }
 
     partial void OnMinimizeToTrayOnLaunchChanged(bool value)

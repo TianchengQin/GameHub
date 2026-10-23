@@ -11,12 +11,14 @@ public sealed class TrayIconService : IDisposable
     private readonly Forms.NotifyIcon _notifyIcon;
     private readonly Window _mainWindow;
 
-    public TrayIconService(Window mainWindow)
+    public TrayIconService(Window mainWindow, Action toggleFloatingWindow)
     {
         _mainWindow = mainWindow;
 
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("显示主窗口", null, (_, _) => RestoreMainWindow());
+        menu.Items.Add("显示/隐藏收藏悬浮窗", null, (_, _) => toggleFloatingWindow());
+        menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add("退出 GameHub", null, (_, _) => Application.Current.Shutdown());
 
         _notifyIcon = new Forms.NotifyIcon
