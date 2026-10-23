@@ -1,0 +1,52 @@
+<ui:FluentWindow x:Class="GameHub.App.Views.ScanConfirmationWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 Title="确认导入的游戏"
+                 Width="640" Height="560"
+                 WindowStartupLocation="CenterOwner"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica">
+    <Grid Margin="0,40,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="确认导入的游戏" Margin="0,-40,0,0"/>
+
+        <TextBlock Grid.Row="0" Margin="16,8,16,8" Opacity="0.7"
+                   Text="以下是扫描到的候选游戏，可取消勾选不需要导入的项，或改选该文件夹内检测到的其他可执行文件。"
+                   TextWrapping="Wrap"/>
+
+        <ScrollViewer Grid.Row="1" Margin="16,0,16,8" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Rows}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,1" Padding="0,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="220"/>
+                                </Grid.ColumnDefinitions>
+
+                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                                <ui:TextBox Grid.Column="1" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,8,0"/>
+
+                                <ComboBox Grid.Column="2" ItemsSource="{Binding ExePaths}" SelectedItem="{Binding SelectedExePath}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="16">
+            <ui:Button Content="取消" Margin="0,0,8,0" Click="OnCancelClick"/>
+            <ui:Button Content="导入选中的游戏" Appearance="Primary" Click="OnConfirmClick"/>
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>

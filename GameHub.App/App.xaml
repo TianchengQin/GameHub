@@ -1,0 +1,19 @@
+﻿<Application x:Class="GameHub.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:conv="clr-namespace:GameHub.App.Converters">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ui:ThemesDictionary Theme="Dark" />
+                <ui:ControlsDictionary />
+            </ResourceDictionary.MergedDictionaries>
+
+            <conv:RelativeTimeConverter x:Key="RelativeTimeConverter"/>
+            <conv:PathToImageSourceConverter x:Key="PathToImageSourceConverter"/>
+            <conv:CoverPlaceholderVisibilityConverter x:Key="CoverPlaceholderVisibilityConverter"/>
+            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

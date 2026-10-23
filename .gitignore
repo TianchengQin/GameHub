@@ -1,0 +1,26 @@
+# .NET build output
+bin/
+obj/
+out/
+
+# Publish / packaging output (large binaries, not meant for git)
+publish/
+dist/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# Test results
+TestResults/
+
+# SQLite database and runtime data (lives in %LocalAppData%\GameHub on the user's machine)
+*.db
+*.db-shm
+*.db-wal
+
+# OS junk
+Thumbs.db
+.DS_Store
