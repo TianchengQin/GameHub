@@ -30,16 +30,21 @@ public class SettingsService : ISettingsService
         return new AppSettings();
     }
 
-    public void Save()
+    public bool Save()
     {
         try
         {
+            Directory.CreateDirectory(AppPaths.AppDataRoot);
             var json = JsonSerializer.Serialize(Current, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(AppPaths.SettingsPath, json);
+            var temp = AppPaths.SettingsPath + ".tmp";
+            File.WriteAllText(temp, json);
+            File.Move(temp, AppPaths.SettingsPath, overwrite: true);
+            return true;
         }
         catch
         {
-            // Best-effort persistence; a failed save shouldn't crash the app.
+            // A failed save shouldn't crash the app; callers that care can check the result.
+            return false;
         }
     }
 }

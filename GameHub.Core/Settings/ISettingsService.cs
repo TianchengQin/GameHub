@@ -3,5 +3,6 @@ namespace GameHub.Core.Settings;
 public interface ISettingsService
 {
     AppSettings Current { get; }
-    void Save();
+    /// <summary>Writes settings to disk; returns false if the file could not be written.</summary>
+    bool Save();
 }

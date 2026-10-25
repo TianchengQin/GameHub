@@ -4,7 +4,7 @@
 ; Re-running a newer GameHubSetup-<version>.exe over an existing install upgrades it in place.
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.2.0"
+  #define MyAppVersion "1.2.1"
 #endif
 #ifndef MyAppId
   #define MyAppId "{{B6F2D9B2-6B1E-4B6C-9B0E-8B5F7B6C9B21}"

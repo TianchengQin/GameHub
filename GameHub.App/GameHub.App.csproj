@@ -19,7 +19,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationIcon>Assets\GameHub.ico</ApplicationIcon>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <AssemblyName>GameHub.App</AssemblyName>
   </PropertyGroup>
 

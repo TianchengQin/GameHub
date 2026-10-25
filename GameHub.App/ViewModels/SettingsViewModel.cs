@@ -9,6 +9,7 @@ using GameHub.App.Theming;
 using GameHub.App.Updates;
 using GameHub.Core;
 using GameHub.Core.Backup;
+using GameHub.Core.Covers;
 using GameHub.Core.Repositories;
 using GameHub.Core.Settings;
 using GameHub.Core.Updates;
@@ -36,6 +37,7 @@ public partial class SettingsViewModel : ObservableObject
     private bool _minimizeToTrayOnLaunch;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(TestApiKeyCommand))]
     private string _steamGridDbApiKey;
 
     [ObservableProperty]
@@ -157,7 +159,39 @@ public partial class SettingsViewModel : ObservableObject
     partial void OnSteamGridDbApiKeyChanged(string value)
     {
         _settingsService.Current.SteamGridDbApiKey = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-        _settingsService.Save();
+        ApiKeyStatus = _settingsService.Save()
+            ? (string.IsNullOrWhiteSpace(value) ? "未设置" : "已自动保存")
+            : "保存失败：无法写入设置文件，请检查数据文件夹的权限。";
+    }
+
+    [ObservableProperty]
+    private string _apiKeyStatus = string.Empty;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(TestApiKeyCommand))]
+    private bool _isTestingApiKey;
+
+    private bool CanTestApiKey() => !IsTestingApiKey && !string.IsNullOrWhiteSpace(SteamGridDbApiKey);
+
+    [RelayCommand(CanExecute = nameof(CanTestApiKey))]
+    private async Task TestApiKeyAsync()
+    {
+        IsTestingApiKey = true;
+        ApiKeyStatus = "正在验证…";
+        try
+        {
+            using var client = new SteamGridDbClient(SteamGridDbApiKey.Trim());
+            var games = await client.SearchGamesAsync("Hades");
+            ApiKeyStatus = games.Count > 0 ? "✓ API Key 有效，已保存。" : "Key 可用，但测试搜索没有返回结果。";
+        }
+        catch (Exception ex)
+        {
+            ApiKeyStatus = $"验证失败：{ex.Message}";
+        }
+        finally
+        {
+            IsTestingApiKey = false;
+        }
     }
 
     partial void OnSelectedThemeChanged(AppTheme value)
