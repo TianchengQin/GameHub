@@ -1,142 +1,130 @@
 # GameHub
 
-一个原生 Windows 桌面游戏库管理软件：统一管理本地任意 exe 游戏，支持手动/扫描文件夹/拖拽添加、自定义分组、启动与游玩时长统计、自定义封面图，并提供一键安装包。
+**English** | [简体中文](README.zh-CN.md)
 
-界面基于 [WPF-UI](https://github.com/lepoco/wpfui) 实现 Windows 11 风格的 Fluent/Mica 深色主题。
+A native Windows desktop launcher for your game library. Add any `.exe` game by hand, by drag-and-drop, by scanning a folder or from the Start Menu; organise games into groups, pin favorites to a floating launcher, and see when you last played each one. Ships with an installer and a built-in updater.
 
-## 功能特性
+The UI uses [WPF-UI](https://github.com/lepoco/wpfui) for a Windows 11 style (Fluent / Mica, dark by default).
 
-### 添加游戏
-- **手动添加**：选择单个 exe 文件
-- **拖拽添加**：直接把 exe 拖进主窗口
-- **扫描文件夹**：选择一个根目录（如 `D:\Games`），自动遍历每个子文件夹，用黑名单规则过滤安装包/卸载程序/运行库等明显不是游戏主程序的 exe，再按"文件名与文件夹名相似度 + 是否在根目录 + 文件大小"打分排序，弹出确认对话框让你勾选要导入的游戏、并可手动改选探测到的其他 exe
+## Features
 
-### 分组与浏览
-- 侧边栏固定分组：全部游戏 / 收藏 / 最近玩过
-- 自定义分组（可增删改，一个游戏可同时属于多个分组）
-- 搜索、收藏、右键菜单（查看详情 / 收藏 / 在文件夹中显示 / 从库中移除）
+### Adding games
+- **Add one exe** with a file picker, or **drag an `.exe` onto the window**
+- **Scan a folder** (e.g. `D:\Games`): every subfolder becomes a candidate. Installers, uninstallers, redistributables, crash reporters and the like are filtered out by a configurable blacklist, the remaining exes are ranked (name similarity to the folder, depth, file size), and you confirm what to import and can switch to another detected exe
+- **Import from the Start Menu**: reads `.lnk` shortcuts, skips uninstall/help/readme entries, and lets you tick what to import
 
-### 启动与统计
-- 点击启动即记录"上次启动时间"（不依赖进程能否被追踪，保证这一项始终准确）
-- 自动统计启动次数、总游玩时长
-- 运行中状态标识，防止重复启动
-- exe 路径失效检测，详情面板可重新定位
+### Organising and browsing
+- Built-in views: All games, Favorites, Recently played
+- Custom groups; a game can belong to several groups
+- **Drag a game card onto a group** in the sidebar to add it; **drag the ⠿ handle** in "Manage groups" to reorder groups
+- Search, right-click menu (details, favorite, show in folder, remove)
+- **Favorites** are marked with a clickable ★ on the card and sorted to the front
 
-### 游戏详情 & 封面
-- 详情面板：统计数据、备注、自定义启动参数/工作目录、所属分组管理
-- 图标：新增游戏时提取 exe 的 256px 高清图标（旧版本留下的低清缓存会在启动时自动升级），无自定义封面时居中显示，避免放大模糊
-- 封面图：详情面板可手动更换为自定义图片或在线搜索，自定义封面会铺满卡片
+### Launching and stats
+- The last-played time is recorded the moment you click launch, regardless of how the game process behaves afterwards
+- Launch count and total play time, a "running" state that prevents double launches
+- Missing or invalid paths show a toast message and a "path invalid" badge; the details window can relocate the exe
+- Optional: minimize to the system tray after launching a game (tray menu: show window, toggle floating window, exit)
 
-### 收藏与悬浮窗
-- 卡片右上角 ★/☆ 一键收藏，收藏的游戏在主界面自动排在最前面
-- 「收藏悬浮窗」：置顶、无边框、可拖动的小窗口，只显示收藏游戏的图标，单击即启动；位置与开关状态会被记住
-- 启动游戏后可自动最小化到系统托盘（设置中可关闭），单击托盘图标恢复
+### Floating favorites window
+A small always-on-top, draggable window that shows only your favorites. Click an icon to launch. Open it from the sidebar ("收藏悬浮窗") or from the tray menu; its position and open/closed state are remembered.
 
-### 更多添加/整理方式
-- 从开始菜单导入：解析开始菜单里的快捷方式（.lnk），自动过滤卸载/帮助/运行库，勾选确认后导入
-- 把游戏卡片拖到侧边栏分组上即可加入该分组；在「管理分组」里拖动 ⠿ 手柄调整分组顺序
-- 启动失败/路径失效会弹出 toast 提示，而不是静默失败
-- 在线封面：设置 SteamGridDB API Key 后，可在游戏详情里搜索并选用高清封面
+### Icons and covers
+- On import the exe's **256 px** icon is extracted (what Explorer shows for extra-large icons); older low-resolution caches are upgraded automatically
+- Games without a custom cover show the icon centered on the tile instead of stretched; custom covers fill the tile
+- Choose your own cover image, or **search SteamGridDB** from the details window (needs your own free API key, set in Settings)
 
-### 设置
-- 主题切换（浅色 / 深色 / 跟随系统）
-- 文件夹扫描黑名单规则增删
-- 数据/缓存文件夹入口
-- 游戏库导出/导入（JSON 备份，用于换电脑或重装系统后恢复）
+### Settings
+Theme (light / dark / system), launch behavior, SteamGridDB key, scan blacklist rules, data folder shortcut, **JSON backup / restore** of the whole library, and the **Update** section.
 
-## 技术栈
+## Install
 
-| 层 | 技术 |
+Download `GameHubSetup-<version>.exe` from the [Releases](https://github.com/TianchengQin/GameHub/releases) page and run it. It is self-contained, so no .NET runtime is needed. It creates a Start Menu shortcut and (by default) a desktop shortcut. Running a newer installer over an existing install upgrades it in place and keeps your data.
+
+Your data lives in `%LocalAppData%\GameHub\`:
+
+```
+library.db     SQLite database
+icons\         extracted exe icons
+covers\        custom cover images
+settings.json  settings
+```
+
+Uninstalling asks whether to also delete that folder (a silent uninstall keeps it).
+
+## Updating
+
+Open **Settings → Update** to check for and install a new version in one click; GameHub also checks quietly at startup (can be turned off). The updater reads the latest GitHub Release of this repository, downloads the `GameHubSetup-*.exe` asset, **verifies its SHA-256**, runs it silently and relaunches GameHub. A release without a checksum is refused (open the release page and install manually instead).
+
+## Tech stack
+
+| Layer | Technology |
 |---|---|
-| UI | .NET 8 + WPF + [WPF-UI](https://github.com/lepoco/wpfui)（Fluent Design / Mica） |
+| UI | .NET 8, WPF, [WPF-UI](https://github.com/lepoco/wpfui) |
 | MVVM | [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) |
-| 数据持久化 | SQLite + EF Core（`Microsoft.EntityFrameworkCore.Sqlite`） |
-| 依赖注入 | `Microsoft.Extensions.Hosting` |
-| 图标提取 | `System.Drawing.Common` |
-| 安装包 | [Inno Setup 6](https://jrsoftware.org/isinfo.php) |
+| Storage | SQLite via EF Core |
+| Dependency injection | `Microsoft.Extensions.Hosting` |
+| Tray icon / icon extraction | WinForms `NotifyIcon`, Windows Shell (`IShellItemImageFactory`) |
+| Installer | [Inno Setup 6](https://jrsoftware.org/isinfo.php) |
 
-## 项目结构
+## Project layout
 
 ```
 GameHub.sln
-├─ GameHub.Core/        领域模型、文件夹扫描启发式算法、进程启动与计时、设置与备份、不依赖 WPF
-├─ GameHub.Data/        EF Core DbContext、Repository 实现、Migrations
-├─ GameHub.App/         WPF 主程序（Views / ViewModels / Converters）
-├─ GameHub.Core.Tests/  xUnit 单元测试（扫描黑名单过滤、打分排序、启动器守卫逻辑）
-└─ installer/setup.iss  Inno Setup 安装包脚本
+├─ GameHub.Core/        models, scanning, launching, icons, settings, backup, SteamGridDB client, update checker (no WPF)
+├─ GameHub.Data/        EF Core DbContext, repository, migrations
+├─ GameHub.App/         WPF app (views, view models, converters, tray, updater glue)
+├─ GameHub.Core.Tests/  xUnit tests
+├─ installer/setup.iss  Inno Setup script
+├─ scripts/build-release.ps1   tests -> publish -> installer -> SHA-256
+└─ tools/make-icon.ps1  generates the app icon
 ```
 
-数据与缓存存放在 `%LocalAppData%\GameHub\`：
+## Development
 
-```
-library.db          SQLite 数据库
-icons\              自动提取的 exe 图标缓存
-covers\             用户设置的自定义封面图
-settings.json       主题 / 扫描黑名单等应用设置
-logs\               预留日志目录
-```
+Requires the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
 
-## 本地开发
-
-需要 [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)。
-
-```bash
-# 构建整个解决方案
+```powershell
 dotnet build GameHub.sln
-
-# 运行单元测试
 dotnet test GameHub.Core.Tests/GameHub.Core.Tests.csproj
-
-# 启动应用（调试模式）
 dotnet run --project GameHub.App/GameHub.App.csproj
 ```
 
-首次启动会自动在 `%LocalAppData%\GameHub\` 创建数据库并执行 EF Core 迁移。
+Set the environment variable `GAMEHUB_DATA_DIR` to run against an isolated data folder instead of `%LocalAppData%\GameHub`, which is handy for testing without touching your real library.
 
-## 打包与发布更新
+## Releasing a new version
 
-需要 [Inno Setup 6](https://jrsoftware.org/isinfo.php)（`winget install JRSoftware.InnoSetup`）。版本号在 `GameHub.App/GameHub.App.csproj` 的 `<Version>` 里。
+1. Bump `<Version>` in `GameHub.App/GameHub.App.csproj`.
+2. Run the build script (needs Inno Setup: `winget install JRSoftware.InnoSetup`):
 
-```powershell
-# 测试 -> self-contained 单文件发布 -> 编译安装包 -> 生成 SHA-256
-powershell -File scriptsuild-release.ps1
-```
+   ```powershell
+   powershell -File scripts\build-release.ps1
+   ```
 
-产物是 `dist\GameHubSetup-<版本>.exe`（同时也是"更新程序"：直接运行即可原地升级，设置和游戏库数据保留）。
+   It runs the tests, publishes a self-contained single-file build, compiles `dist\GameHubSetup-<version>.exe` and prints its SHA-256.
+3. Create a GitHub Release tagged `v<version>`, attach the installer and add a line `SHA-256: <hash>` to the notes (GitHub also records a digest for uploaded assets, which the updater uses when present).
 
-### 应用内更新
-设置页 →「更新」可以检查并一键安装新版本；启动时也会静默检查（可关闭）。它读取本仓库 GitHub Releases 的最新发布，要求：
-1. Release 的 tag 形如 `v1.3.0`
-2. 附件里有 `GameHubSetup-*.exe`
-3. 完整性校验值：GitHub 会自动给附件生成 digest；若没有，请在 Release 说明里写一行 `SHA-256: <64位十六进制>`（`build-release.ps1` 末尾会打印）
+The installer doubles as the update program: the in-app updater downloads this same file from the release.
 
-下载后会校验 SHA-256，不匹配则丢弃，然后以静默模式运行安装包并自动重启 GameHub。
+## Known limitations
 
-安装包已验证过完整的"静默安装 → 启动 → 卸载"流程；卸载时会询问是否同时删除 `%LocalAppData%\GameHub` 下的数据（静默卸载默认保留数据）。
+- **Play time** can be under-counted for games whose main exe is only a launcher that hands off to a child process and exits. The *last played* time is always accurate because it is recorded at launch.
+- Importing from Steam / Epic / GOG libraries is not supported yet.
+- The installer UI is English (a Simplified Chinese language file is not bundled with Inno Setup; see the comment in `installer/setup.iss`).
 
-## 已知局限
+## Roadmap
 
-- **游玩时长统计**：部分游戏的主 exe 只是启动器，启动后很快退出并由子进程真正运行游戏，这种情况下时长统计会不准（但"上次启动时间"始终准确，因为它在点击启动的瞬间就被记录）。精确统计需要监控子进程树，见下方路线图。
-- 暂不支持自动导入 Steam / Epic / GOG 等平台已安装的游戏库。
+Done: Start Menu import, tray minimize, drag-to-group and group reordering, toast notifications, SteamGridDB covers, favorites and the floating window, sharp icons, in-app updater.
 
-## 未来迭代计划
+Next:
+- [ ] Import installed games from Steam / Epic / GOG / Ubisoft / Battle.net
+- [ ] Accurate play time by tracking the child-process tree
+- [ ] Rating and screenshots on the details page
+- [ ] Sync the library across devices
 
-### 已完成（v1.1）
-- [x] Windows 开始菜单快捷方式批量扫描导入
-- [x] 启动后自动最小化到系统托盘
-- [x] 分组拖拽排序、游戏卡片拖拽分组
-- [x] 启动失败/路径失效的更友好提示（toast 而不是静默失败）
-- [x] SteamGridDB 等在线接口抓取高清封面图
+Later:
+- [ ] Gamepad-friendly "Big Picture" mode
+- [ ] Play statistics dashboard
+- [ ] Plugin-style library importers
 
-### 中期
-- [ ] 自动导入 Steam / Epic / GOG /育碧 / 战网等平台已安装游戏库
-- [ ] 基于子进程树（WMI/ETW）的精确游玩时长统计
-- [ ] 游戏详情页支持评分、截图集
-- [ ] 多设备间的库数据云同步
-
-### 远期
-- [ ] 手柄导航的"大屏模式"（Big Picture）
-- [ ] 游玩数据统计看板（周/月活跃度、时长趋势图）
-- [ ] 插件化的平台导入机制（类似 Playnite 的 library plugin）
-
-欢迎提 Issue 或 PR。
+Issues and pull requests are welcome.
